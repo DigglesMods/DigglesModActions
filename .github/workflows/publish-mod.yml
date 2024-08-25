@@ -51,7 +51,7 @@ jobs:
 
       - name: Create ZIP file
         run: |
-          mkdir /${{ inputs.mod-name }}
+          mkdir ${{ inputs.mod-name }}
           cp -r !(.*) /${{ inputs.mod-name }}
           zip -r -q ${{ inputs.mod-name }}-${{ steps.get_version.outputs.result }}.zip ${{ inputs.mod-name }}
 

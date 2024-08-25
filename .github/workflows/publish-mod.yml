@@ -52,7 +52,7 @@ jobs:
       - name: Create ZIP file
         run: |
           mkdir ${{ inputs.mod-name }}
-          rsync -av --exclude=".*" . ${{ inputs.mod-name }}
+          rsync -av --exclude=".*" --exclude="${{ inputs.mod-name }}/" . ${{ inputs.mod-name }}
           zip -r -q ${{ inputs.mod-name }}-${{ steps.get_version.outputs.result }}.zip ${{ inputs.mod-name }}
 
       - name: Create Release

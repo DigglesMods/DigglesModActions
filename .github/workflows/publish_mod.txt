@@ -1,0 +1,67 @@
+# This workflow publishes a Diggles mod of a project on Github
+
+name: Publish Github
+
+on:
+  workflow_call:
+    inputs:
+      mod-title:
+        description: 'The name that should be added to the title of the Release on Github'
+        required: true
+        type: string
+      mod-name:
+        description: 'The name that should be used for filenames'
+        required: true
+        type: string
+    secrets:
+      github-token:
+        description: 'Github token'
+        required: true
+
+jobs:
+  publish:
+    name: Publish Github
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+      packages: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get Version
+        id: get_version
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.github-token }}
+          result-encoding: string
+          script: |
+            return '${{ github.ref }}'.replace('refs/tags/', '');
+
+      - name: Get Changelog
+        id: get_changelog
+        run: |
+          content=`cat ./CHANGELOG.md | sed '0,/^## \[${{ steps.get_version.outputs.result }}\]/d' | sed '/^## \[/,$d'`
+          delimiter="$(openssl rand -hex 8)"
+          echo "result<<$delimiter" >> $GITHUB_OUTPUT
+          echo "$content" >> $GITHUB_OUTPUT
+          echo "$delimiter" >> $GITHUB_OUTPUT
+
+      - name: Create ZIP file
+        run: |
+          mkdir /${{ inputs.mod-name }}
+          cp -r !(.*) /${{ inputs.mod-name }}
+          zip -r -q ${{ inputs.mod-name }}-${{ steps.get_version.outputs.result }}.zip ${{ inputs.mod-name }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.result }}
+          name: ${{ inputs.mod-title }} ${{ steps.get_version.outputs.result }}
+          body: ${{ steps.get_changelog.outputs.result }}
+          draft: false
+          prerelease: false
+          files: ${{ inputs.mod-name }}-${{ steps.get_version.outputs.result }}.zip
+          token: ${{ secrets.github-token }}
